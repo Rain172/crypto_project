@@ -1,54 +1,70 @@
 import socket
 import pickle
-from time import sleep
+import time
 
-def send_transaction(sender, recipient, amount, node_socket):
-    transaction = {
-        "sender": sender,
-        "recipient": recipient,
-        "amount": amount
-    }
-    message = {"type": "transaction", "transaction": transaction}
-    node_socket.sendall(pickle.dumps(message))
+class Wallet:
+    def __init__(self, name, initial_balance=0):
+        self.name = name
+        self.balance = initial_balance
+        self.transactions = []
 
-def display_blockchain(node, node_name):
-    print(f"Blockchain on {node_name} ({node.host}:{node.port}):")
-    for block in node.blockchain.chain:
-        print(f"Block #{block.index}")
-        print(f"Hash: {block.hash}")
-        print(f"Previous Hash: {block.previous_hash}")
-        print(f"Timestamp: {block.timestamp}")
-        print(f"Data: {block.data}")
-        print(f"Nonce: {block.nonce}")
-        print("")
+    def check_balance(self):
+        return self.balance
+
+    def add_transaction(self, recipient, amount, node_socket):
+        if amount <= 0:
+            print("Invalid transaction amount.")
+            return
+
+        if self.balance < amount:
+            print("Insufficient funds for the transaction.")
+            return
+
+        transaction = {
+            "sender": self.name,
+            "recipient": recipient,
+            "amount": amount
+        }
+        message = {"type": "transaction", "transaction": transaction}
+        node_socket.sendall(pickle.dumps(message))
+        self.transactions.append(transaction)
+        self.balance -= amount
 
 def main():
-    # Connect to nodes with the updated IP address
-    node1_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    node1_socket.connect(("10.0.98.59", 4999))
-    print("Connected to Node 1")
+    node_host = "10.0.97.119"  # Update with the appropriate IP address of the blockchain node
+    node_port = 5000  # Update with the appropriate port of the blockchain node
+    client_name = input("Enter your name: ")
 
-    node2_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    node2_socket.connect(("10.0.98.59", 5000))
-    print("Connected to Node 2")
+    # Initialize the wallet with an initial balance (optional)
+    client_wallet = Wallet(client_name, initial_balance=1000)
 
-    # Send transactions to specific nodes
-    send_transaction("Alice", "Bob", 10, node1_socket)
-    send_transaction("Bob", "Charlie", 5, node2_socket)
+    node_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    try:
+        node_socket.connect((node_host, node_port))
+    except Exception as e:
+        print(f"Connection to the node at {node_host}:{node_port} failed. Error: {e}")
+        return
 
-    # Display blockchain status
-    sleep(1)  # Give nodes time to process transactions and mine blocks
-    node1_socket.sendall(pickle.dumps({"type": "get_blockchain"}))
-    node2_socket.sendall(pickle.dumps({"type": "get_blockchain"}))
+    while True:
+        print("\nOptions:")
+        print("1. Check Wallet Balance")
+        print("2. Send Transaction")
+        print("3. Exit")
+        choice = input("Enter your choice: ")
 
-    # Receive and display blockchain
-    node1_blockchain = pickle.loads(node1_socket.recv(1024))
-    node2_blockchain = pickle.loads(node2_socket.recv(1024))
-    display_blockchain(node1_blockchain, "Node 1")
-    display_blockchain(node2_blockchain, "Node 2")
-
-    node1_socket.close()
-    node2_socket.close()
+        if choice == "1":
+            balance = client_wallet.check_balance()
+            print(f"{client_wallet.name}'s Wallet Balance: {balance}")
+        elif choice == "2":
+            recipient = input("Enter recipient's name: ")
+            amount = float(input("Enter transaction amount: "))
+            client_wallet.add_transaction(recipient, amount, node_socket)
+        elif choice == "3":
+            node_socket.close()
+            break
+        else:
+            print("Invalid choice. Please select a valid option.")
 
 if __name__ == "__main__":
     main()
