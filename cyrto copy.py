@@ -34,6 +34,7 @@ class Blockchain:
         self.chain = [self.create_genesis_block()]
         self.pending_transactions = []
         self.lock = threading.Lock()  # Lock for thread safety
+        self.balances = {}  # Dictionary to store user balances
 
     def create_genesis_block(self):
         return Block(0, "0", int(time.time()), "Genesis Block", self.calculate_hash(0, "0", int(time.time()), "Genesis Block", 0), 0)
@@ -73,6 +74,25 @@ class Blockchain:
 
     def add_transaction(self, transaction):
         self.pending_transactions.append(transaction)
+
+    def process_transactions(self):
+        for transaction in self.pending_transactions:
+            sender = transaction.sender
+            recipient = transaction.recipient
+            amount = transaction.amount
+
+            # Check if sender has enough balance
+            if self.balances.get(sender, 0) < amount:
+                print(f"Transaction failed: Insufficient balance for {sender}.")
+                continue
+
+            # Update sender's balance
+            self.balances[sender] -= amount
+
+            # Update recipient's balance
+            self.balances[recipient] = self.balances.get(recipient, 0) + amount
+
+        self.pending_transactions = []  # Clear processed transactions
 
     def calculate_hash(self, index, previous_hash, timestamp, data, nonce):
         value = str(index) + str(previous_hash) + str(timestamp) + str(data) + str(nonce)
@@ -121,6 +141,7 @@ class Node:
             if received_block.index > self.blockchain.get_previous_block().index:
                 if self.blockchain.validate_blockchain():
                     self.blockchain.add_block(received_block)
+                    self.blockchain.process_transactions()  # Process transactions in the new block
                     self.broadcast_block(received_block)
                     print(f"Received and added new block #{received_block.index}")
 
@@ -147,10 +168,12 @@ def main():
 
     new_block1 = node1.blockchain.create_new_block(proof_of_work(node1.blockchain.get_previous_block().index + 1, node1.blockchain.get_previous_block().hash, int(time.time()), node1.blockchain.pending_transactions))
     node1.blockchain.add_block(new_block1)
+    node1.blockchain.process_transactions()  # Process transactions in the new block
     node1.broadcast_block(new_block1)
 
     new_block2 = node2.blockchain.create_new_block(proof_of_work(node2.blockchain.get_previous_block().index + 1, node2.blockchain.get_previous_block().hash, int(time.time()), node2.blockchain.pending_transactions))
     node2.blockchain.add_block(new_block2)
+    node2.blockchain.process_transactions()  # Process transactions in the new block
     node2.broadcast_block(new_block2)
 
 if __name__ == "__main__":
