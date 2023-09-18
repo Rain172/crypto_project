@@ -12,7 +12,7 @@ class Block:
         self.hash = self.calculate_hash() if hash is None else hash  # Block's hash
 
     def calculate_hash(self):
-        # Calculate the hash of the block based on its attributes
+        # Calculate the hash of the block based on the information
         value = str(self.index) + self.previous_hash + str(self.timestamp) + str(self.data) + str(self.nonce)
         return hashlib.sha256(value.encode()).hexdigest()
 
