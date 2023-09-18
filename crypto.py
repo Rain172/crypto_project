@@ -18,7 +18,7 @@ class Block:
 
 class Blockchain:
     def __init__(self):
-        # Initialize the blockchain with a list containing the genesis block
+        # Starts the blockchain with a list containing the genesis block
         self.chain = self.load_chain_from_file() or [self.create_genesis_block()]
         self.pending_transactions = []  # Transactions waiting to be mined
         self.wallets = self.load_wallets_from_file() or {"Wallet1": 100, "Wallet2": 100, "Wallet3": 100, "Wallet4": 100} # Loads the wallet from a file if there isn't one starts with defualt
@@ -116,7 +116,7 @@ class Blockchain:
         self.wallets[recipient] += amount
         print("Transaction created.")
 
-# Initialize the blockchain
+# Starts the blockchain
 blockchain = Blockchain()
 
 while True:
