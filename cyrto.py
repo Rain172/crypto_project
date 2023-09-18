@@ -97,7 +97,7 @@ class Blockchain:
         self.add_block(new_block)
         self.pending_transactions = []
 
-        # Credit mining reward to miner's wallet
+        # Gives mining reward to miner's wallet
         self.wallets[miner_address] += reward
 
     def create_transaction(self, sender, recipient, amount):
